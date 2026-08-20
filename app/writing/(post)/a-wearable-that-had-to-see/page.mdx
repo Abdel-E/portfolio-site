@@ -1,0 +1,24 @@
+export const metadata = {
+  title: 'A wearable that had to see',
+  description:
+    'Notes from MakeUofT: putting YOLO on a Pi, cutting inference latency, and why the constraint was the whole point.',
+  alternates: {
+    canonical: '/writing/a-wearable-that-had-to-see',
+  },
+}
+
+# A wearable that had to see
+
+Twin was a weekend project with an unkind constraint: a Raspberry Pi and an Arduino had to look at the world and answer fast enough that a person would still trust it.
+
+We won MakeUofT 1st Place Overall. The useful part was not the trophy. It was the 80% drop in vision inference latency after we stopped treating the model as a cloud service and started treating it as something that had to live next to the camera.
+
+## The constraint was the design
+
+Off-device inference is easy to demo and easy to miss. A wearable that pauses, buffers, then guesses is worse than one that sees a little less and answers now. Localized YOLO-v8 models, a tighter capture loop, and a Pi/Arduino split for sensing versus actuation got us from "it works on the laptop" to "it works on a person."
+
+I still like that trade. Most of the work I care about — event cameras at NavINST, sensor pipelines on the formula car, agents that cannot wait 400ms for a gateway — has the same shape. The interesting engineering is rarely more model. It is making the system honest about time.
+
+---
+
+_A first note. More when something is worth keeping._
