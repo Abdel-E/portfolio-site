@@ -38,7 +38,7 @@ export function ScrambleName() {
   const generation = useRef(0)
   const holdTimer = useRef(0)
   const raf = useRef(0)
-  const currentText = useRef(ENGLISH)
+  const currentText = useRef<string>(ENGLISH)
   const reduceMotion = useRef(false)
 
   const stop = () => {
