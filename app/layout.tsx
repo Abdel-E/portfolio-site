@@ -11,7 +11,7 @@ import './globals.css'
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#F6F1E8',
+  themeColor: '#161310',
 }
 
 export const metadata: Metadata = {
@@ -66,8 +66,10 @@ const themeInitScript = `
 (function(){
   try {
     var stored = localStorage.getItem('theme');
-    document.documentElement.classList.toggle('dark', stored === 'dark');
-  } catch (e) {}
+    document.documentElement.classList.toggle('dark', stored !== 'light');
+  } catch (e) {
+    document.documentElement.classList.add('dark');
+  }
 })();
 `
 
@@ -77,7 +79,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>

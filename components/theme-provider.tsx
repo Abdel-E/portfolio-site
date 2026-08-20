@@ -18,11 +18,11 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('light')
+  const [theme, setTheme] = useState<Theme>('dark')
 
   useEffect(() => {
     const stored = window.localStorage.getItem('theme')
-    const next: Theme = stored === 'dark' ? 'dark' : 'light'
+    const next: Theme = stored === 'light' ? 'light' : 'dark'
     setTheme(next)
     document.documentElement.classList.toggle('dark', next === 'dark')
   }, [])
