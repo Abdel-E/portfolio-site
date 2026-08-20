@@ -1,8 +1,12 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import Link from 'next/link'
+
 import { EGYPT_FACTS } from '@/content/egypt-facts'
+
+function hasHover() {
+  return window.matchMedia('(hover: hover) and (pointer: fine)').matches
+}
 
 export function ScarabHome() {
   const [index, setIndex] = useState(0)
@@ -10,9 +14,7 @@ export function ScarabHome() {
   const hovering = useRef(false)
   const advanceOnNextHover = useRef(false)
 
-  const onEnter = () => {
-    if (hovering.current) return
-    hovering.current = true
+  const show = () => {
     if (advanceOnNextHover.current) {
       setIndex((current) => (current + 1) % EGYPT_FACTS.length)
       advanceOnNextHover.current = false
@@ -20,20 +22,39 @@ export function ScarabHome() {
     setOpen(true)
   }
 
-  const onLeave = () => {
-    hovering.current = false
+  const hide = () => {
     setOpen(false)
     advanceOnNextHover.current = true
   }
 
+  const onEnter = () => {
+    if (!hasHover() || hovering.current) return
+    hovering.current = true
+    show()
+  }
+
+  const onLeave = () => {
+    if (!hasHover()) return
+    hovering.current = false
+    hide()
+  }
+
+  const onClick = () => {
+    if (hasHover()) return
+    if (open) hide()
+    else show()
+  }
+
   return (
-    <Link
-      href="/"
-      aria-label="Home"
+    <button
+      type="button"
+      aria-expanded={open}
+      aria-label="Show a fun fact about Egypt"
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
       onFocus={onEnter}
       onBlur={onLeave}
+      onClick={onClick}
       className="scarab-shake relative order-1 inline-flex h-12 w-12 items-center justify-center sm:absolute sm:left-1/2 sm:top-5 sm:-translate-x-1/2 sm:order-none"
     >
       <span
@@ -46,6 +67,6 @@ export function ScarabHome() {
       </span>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/scarab-toggle.png" alt="" className="h-10 w-10 object-contain" />
-    </Link>
+    </button>
   )
 }
