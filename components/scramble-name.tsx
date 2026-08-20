@@ -32,7 +32,7 @@ function buildQueue(from: string, to: string): QueueItem[] {
 }
 
 export function ScrambleName() {
-  const [text, setText] = useState(ENGLISH)
+  const [text, setText] = useState<string>(ENGLISH)
   const [arabic, setArabic] = useState(false)
   const hovering = useRef(false)
   const generation = useRef(0)
