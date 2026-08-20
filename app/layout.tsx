@@ -11,6 +11,7 @@ import './globals.css'
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  viewportFit: 'cover',
   themeColor: '#161310',
 }
 
@@ -84,12 +85,12 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body
-        className={`${geist.variable} ${newsreader.variable} ${notoNaskh.variable} ${notoHiero.variable} bg-papyrus font-sans text-ink antialiased dark:bg-[#161310] dark:text-papyrus`}
+        className={`${geist.variable} ${newsreader.variable} ${notoNaskh.variable} ${notoHiero.variable} overflow-x-hidden bg-papyrus font-sans text-ink antialiased dark:bg-[#161310] dark:text-papyrus`}
       >
         <ThemeProvider>
           <GlyphField />
           <div className="relative z-10 flex min-h-screen w-full flex-col">
-            <div className="relative mx-auto w-full max-w-[42rem] flex-1 px-6 pb-16 pt-10 sm:pt-12">
+            <div className="relative mx-auto w-full max-w-[42rem] flex-1 px-4 pb-[max(4rem,env(safe-area-inset-bottom))] pt-8 sm:px-6 sm:pt-12">
               <Header />
               <div className="page-wash mt-4 border-t border-sand/80 pt-4 dark:border-white/10">
                 {children}

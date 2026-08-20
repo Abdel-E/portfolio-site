@@ -144,7 +144,7 @@ export function ScrambleName() {
     <Link
       href="/"
       aria-label="Home"
-      className="inline-flex min-h-9 min-w-[12rem] items-center font-serif text-[2.15rem] font-semibold leading-tight tracking-tight text-ink dark:text-papyrus"
+      className="inline-flex min-h-9 max-w-full min-w-0 items-center font-serif text-[1.7rem] font-semibold leading-tight tracking-tight text-ink dark:text-papyrus sm:text-[2.15rem]"
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
       onFocus={onEnter}
@@ -155,8 +155,8 @@ export function ScrambleName() {
         lang={arabic ? 'ar' : 'en'}
         className={
           arabic
-            ? 'whitespace-nowrap font-[family-name:var(--font-noto-naskh)] text-[1.7rem] font-medium'
-            : 'whitespace-nowrap'
+            ? 'font-[family-name:var(--font-noto-naskh)] text-[1.45rem] font-medium sm:text-[1.7rem]'
+            : undefined
         }
       >
         {text}

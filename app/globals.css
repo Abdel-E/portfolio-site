@@ -27,6 +27,7 @@
 
   html,
   body {
+    overflow-x: hidden;
     background-color: var(--color-papyrus);
     color: var(--color-ink);
   }

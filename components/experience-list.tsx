@@ -32,24 +32,26 @@ function ExperienceRow({ job }: { job: Experience }) {
       transition={{ type: 'spring', bounce: 0.05, duration: 0.28 }}
     >
       <MorphingDialogTrigger className="-mx-1.5 rounded-md px-1.5 py-1 text-left transition-colors hover:bg-sand/60 dark:hover:bg-white/5">
-        <div className="flex items-center gap-3">
+        <div className="flex items-start gap-3">
           <Favicon domain={job.domain} logo={job.logo} label={job.company} />
           <div className="min-w-0 flex-1">
-            <MorphingDialogTitle className="truncate text-[16px] font-semibold leading-tight text-ink dark:text-papyrus">
-              {job.company}
-            </MorphingDialogTitle>
-            <MorphingDialogSubtitle className="mt-0.5 truncate text-[14px] leading-tight text-muted">
+            <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
+              <MorphingDialogTitle className="text-[16px] font-semibold leading-tight text-ink dark:text-papyrus sm:truncate">
+                {job.company}
+              </MorphingDialogTitle>
+              <span className="shrink-0 text-[13px] text-muted sm:text-[14px]">
+                {job.start} — {job.end}
+              </span>
+            </div>
+            <MorphingDialogSubtitle className="mt-0.5 text-[14px] leading-tight text-muted">
               {job.title}
             </MorphingDialogSubtitle>
           </div>
-          <span className="shrink-0 text-[14px] text-muted">
-            {job.start} — {job.end}
-          </span>
         </div>
       </MorphingDialogTrigger>
 
       <MorphingDialogContainer>
-        <MorphingDialogContent className="relative w-[min(100vw-2rem,32rem)] rounded-2xl border border-gold/35 bg-papyrus p-6 shadow-[0_20px_50px_-24px_rgba(28,25,22,0.45)] dark:border-gold/25 dark:bg-[#161310]">
+        <MorphingDialogContent className="relative max-h-[min(85dvh,36rem)] w-[min(100vw-1.5rem,32rem)] overflow-y-auto rounded-2xl border border-gold/35 bg-papyrus p-5 shadow-[0_20px_50px_-24px_rgba(28,25,22,0.45)] dark:border-gold/25 dark:bg-[#161310] sm:p-6">
           <MorphingDialogClose className="absolute right-4 top-4 rounded-full p-1 text-muted transition-colors hover:text-ink dark:hover:text-papyrus">
             <XIcon size={18} />
           </MorphingDialogClose>

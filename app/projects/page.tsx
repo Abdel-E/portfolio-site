@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function ProjectsPage() {
   return (
     <main className="page-enter">
-      <h1 className="font-serif text-[2.15rem] font-semibold tracking-tight text-ink dark:text-papyrus">
+      <h1 className="font-serif text-[1.7rem] font-semibold tracking-tight text-ink dark:text-papyrus sm:text-[2.15rem]">
         Projects
       </h1>
       <p className="mt-1.5 text-[15px] text-muted">

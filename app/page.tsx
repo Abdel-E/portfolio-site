@@ -21,19 +21,21 @@ export default async function HomePage() {
         <h2 className="mb-2 text-base font-semibold text-ink dark:text-papyrus">
           Education
         </h2>
-        <div className="flex items-center gap-3">
+        <div className="flex items-start gap-3">
           <Favicon logo="/logos/uoft.png" label={SITE.education.school} />
           <div className="min-w-0 flex-1">
-            <p className="text-[16px] font-semibold leading-tight text-ink dark:text-papyrus">
-              {SITE.education.school}
-            </p>
+            <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
+              <p className="text-[16px] font-semibold leading-tight text-ink dark:text-papyrus">
+                {SITE.education.school}
+              </p>
+              <p className="shrink-0 text-[13px] text-muted sm:text-[14px]">
+                {SITE.education.status}
+              </p>
+            </div>
             <p className="mt-0.5 text-[14px] leading-tight text-muted">
               {SITE.education.program}
             </p>
           </div>
-          <p className="shrink-0 text-[14px] text-muted">
-            {SITE.education.status}
-          </p>
         </div>
       </section>
 

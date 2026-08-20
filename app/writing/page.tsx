@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function WritingIndexPage() {
   return (
     <main className="page-enter">
-      <h1 className="font-serif text-[2.15rem] font-semibold tracking-tight text-ink dark:text-papyrus">
+      <h1 className="font-serif text-[1.7rem] font-semibold tracking-tight text-ink dark:text-papyrus sm:text-[2.15rem]">
         Writing
       </h1>
       <p className="mt-1.5 text-[15px] text-muted">

@@ -34,11 +34,11 @@ export function ScarabHome() {
       onMouseLeave={onLeave}
       onFocus={onEnter}
       onBlur={onLeave}
-      className="scarab-shake absolute left-1/2 top-5 inline-flex h-12 w-12 -translate-x-1/2 items-center justify-center"
+      className="scarab-shake relative order-1 inline-flex h-12 w-12 items-center justify-center sm:absolute sm:left-1/2 sm:top-5 sm:-translate-x-1/2 sm:order-none"
     >
       <span
         role="status"
-        className={`pointer-events-none absolute bottom-full left-1/2 z-20 mb-1.5 w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-2.5 py-1.5 text-center text-[13px] leading-none text-papyrus shadow-sm transition-opacity duration-200 dark:bg-papyrus dark:text-ink ${
+        className={`pointer-events-none absolute bottom-full left-1/2 z-20 mb-1.5 w-[min(20rem,calc(100vw-2rem))] -translate-x-1/2 rounded-md bg-ink px-2.5 py-1.5 text-center text-[12px] leading-snug text-papyrus shadow-sm transition-opacity duration-200 dark:bg-papyrus dark:text-ink [@media(hover:hover)]:w-max [@media(hover:hover)]:whitespace-nowrap [@media(hover:hover)]:text-[13px] [@media(hover:hover)]:leading-none ${
           open ? 'opacity-100' : 'opacity-0'
         }`}
       >

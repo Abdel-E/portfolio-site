@@ -23,7 +23,7 @@ export function GithubHeatmap({ activity }: { activity: GithubActivity }) {
 
     const measure = () => {
       const width = node.clientWidth
-      const fit = Math.max(12, Math.floor(width / CELL))
+      const fit = Math.max(8, Math.floor(width / CELL))
       setWeeks(Math.min(activity.weeks.length, fit))
     }
 

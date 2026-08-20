@@ -15,18 +15,18 @@ export function Header() {
   const { theme, toggle } = useTheme()
 
   return (
-    <header className="flex items-start justify-between gap-6">
-      <div>
+    <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+      <div className="min-w-0">
         <ScrambleName />
         <p className="mt-1 text-[15px] text-muted">{SITE.tagline}</p>
       </div>
 
-      <nav className="flex items-center gap-5 pt-2 text-[15px] text-muted">
+      <nav className="flex shrink-0 items-center gap-4 text-[15px] text-muted sm:gap-5 sm:pt-2">
         {NAV.map((item) => (
           <Link
             key={item.href}
             href={item.href}
-            className="transition-colors hover:text-ink dark:hover:text-papyrus"
+            className="py-1 transition-colors hover:text-ink dark:hover:text-papyrus"
           >
             {item.label}
           </Link>
@@ -34,7 +34,7 @@ export function Header() {
         <button
           type="button"
           onClick={toggle}
-          className="text-muted transition-colors hover:text-ink dark:hover:text-papyrus"
+          className="inline-flex h-9 w-9 items-center justify-center text-muted transition-colors hover:text-ink dark:hover:text-papyrus sm:h-auto sm:w-auto"
           aria-label={
             theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
           }
