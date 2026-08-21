@@ -44,6 +44,7 @@ export const PROJECTS: Project[] = [
       'Built an autonomous storefront optimization agent to orchestrate the full user journey, from landing to checkout, replacing static A/B testing with real-time reinforcement learning using Thompson Sampling.',
       'Mapped visitor signals into behavioral segments to drive targeted content across landing, cart, and checkout, outperforming traditional A/B testing by 40% in simulations.',
     ],
+    href: 'https://github.com/Abdel-E/cro-agent/blob/master/shopify-cro-poc/README.md',
   },
   {
     id: 'telemetry',
