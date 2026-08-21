@@ -21,7 +21,7 @@ export const PROJECTS: Project[] = [
       'Reduced kernel cycle counts by up to ~85%, cutting the baseline from ~160K to ~25K cycles and K=256 from ~851K to ~318K.',
       'Got there with vector FMACs, blocked memory layouts, and K-specific optimizations.',
     ],
-    href: '/writing/topk-on-a-wafer',
+    href: 'https://github.com/Abdel-E/cerebras-kernel-challenge/blob/main/src-starter/DESIGN.md',
   },
   {
     id: 'twin',

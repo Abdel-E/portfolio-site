@@ -15,13 +15,13 @@ export function Header() {
   const { theme, toggle } = useTheme()
 
   return (
-    <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-      <div className="min-w-0">
+    <header className="flex items-start justify-between gap-3 sm:gap-6">
+      <div className="min-w-0 flex-1">
         <ScrambleName />
         <p className="mt-1 text-[15px] text-muted">{SITE.tagline}</p>
       </div>
 
-      <nav className="flex shrink-0 items-center gap-4 text-[15px] text-muted sm:gap-5 sm:pt-2">
+      <nav className="flex shrink-0 items-center gap-3 text-[15px] text-muted sm:gap-5 sm:pt-2">
         {NAV.map((item) => (
           <Link
             key={item.href}
