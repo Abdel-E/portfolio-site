@@ -34,7 +34,7 @@ export const PROJECTS: Project[] = [
       'Won 1st Place Overall against 250+ hackers with a Pi/Arduino AI wearable.',
       'Reduced vision inference latency by 80% using localized YOLO-v8 models.',
     ],
-    href: 'https://github.com/Abdel-E',
+    href: 'https://devpost.com/software/twin-pywkb4',
   },
   {
     id: 'telemetry',

@@ -1,7 +1,7 @@
 export const metadata = {
   title: 'A wearable that had to see',
   description:
-    'Notes from MakeUofT: putting YOLO on a Pi, cutting inference latency, and why the constraint was the whole point.',
+    'Twin, a hard-hat survival assistant we built at MakeUofT: camera, heart rate, and on-device guidance when judgment gets expensive.',
   alternates: {
     canonical: '/writing/a-wearable-that-had-to-see',
   },
@@ -9,16 +9,64 @@ export const metadata = {
 
 # A wearable that had to see
 
-Twin was a weekend project with an unkind constraint: a Raspberry Pi and an Arduino had to look at the world and answer fast enough that a person would still trust it.
+As engineering students, we constantly face high-stress situations — exams and deadlines that feel impossible in the moment. When your heart is racing and your thoughts are scattered, all you want is someone calm beside you saying, “It’s okay. Do this next.”
 
-We won MakeUofT 1st Place Overall. The useful part was not the trophy. It was the 80% drop in vision inference latency after we stopped treating the model as a cloud service and started treating it as something that had to live next to the camera.
+Survival situations are no different. Stress clouds judgment, and small mistakes can become dangerous. So we built Twin: a built-in friend, in a hard hat, designed to guide you when things get overwhelming.
 
-## The constraint was the design
+We submitted it to [MakeUofT 2026](https://devpost.com/software/twin-pywkb4) and won 1st Place: Meta Glasses.
 
-Off-device inference is easy to demo and easy to miss. A wearable that pauses, buffers, then guesses is worse than one that sees a little less and answers now. Localized YOLO-v8 models, a tighter capture loop, and a Pi/Arduino split for sensing versus actuation got us from "it works on the laptop" to "it works on a person."
+## What it does
 
-I still like that trade. Most of the work I care about — event cameras at NavINST, sensor pipelines on the formula car, agents that cannot wait 400ms for a gateway — has the same shape. The interesting engineering is rarely more model. It is making the system honest about time.
+Twin is an AI-powered survival assistant integrated directly into a hard hat. It sees your surroundings through a camera, monitors biometric data like heart rate, and gives real-time guidance when you need it.
 
----
+<Callout variant="note" title="The loop">
+  Press a button and ask a question. Twin captures the scene, processes the image, reads the question, and answers with context-aware survival guidance.
+</Callout>
 
-_A first note. More when something is worth keeping._
+1. The user presses a button and asks a question
+2. Twin captures the surrounding environment with a camera
+3. It processes the visual input
+4. It analyzes the user’s question
+5. It responds with context-aware survival guidance
+
+## How we built it
+
+Twin runs on a hybrid embedded system:
+
+- Arduino for sensor input (heart rate and environmental data)
+- Raspberry Pi for processing and AI inference
+- Computer vision for environmental recognition
+- Serial communication between Arduino and Pi for real-time data exchange
+
+When the button is pressed, the Arduino signals the Raspberry Pi. The Pi captures an image, runs the vision stack (YOLO / OpenCV), interprets the question, and generates a response.
+
+## Challenges we ran into
+
+The hardest part was reliable serial communication between the Arduino and the Raspberry Pi. Baud-rate mismatches caused inconsistent data — delayed or corrupted readings.
+
+We also had to balance processing speed against wearable hardware limits. Off-device inference is easy to demo and easy to miss. Localized YOLO-v8 models got us from “it works on the laptop” to “it works on a person.”
+
+## What we’re proud of
+
+- A hardware-triggered AI interaction system
+- Real-time environmental analysis on the hat
+- Embedded systems talking to an on-device vision stack
+- A functional wearable prototype in a weekend
+
+## What we learnt
+
+- How to configure a Raspberry Pi for AI inference
+- How to interface Arduino hardware with a Linux box
+- How much baud-rate matching and serial debugging matter in embedded systems
+- What it actually costs to put hardware and AI in the same real-time loop
+
+<Callout variant="insight" title="The point">
+  Human-centered AI is more useful when it augments decision-making instead of replacing it. Twin started as the friend we wished we had during exams. Now it’s a system meant to stand beside you when it matters.
+</Callout>
+
+## What’s next
+
+- Continuous multi-frame awareness (always-on perception instead of push-to-talk)
+- Better hazard detection models
+- Lower latency and better power
+- Construction safety and disaster response, not just a hackathon hat
