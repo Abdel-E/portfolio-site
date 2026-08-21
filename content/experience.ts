@@ -17,7 +17,7 @@ export const EXPERIENCE: Experience[] = [
     company: 'NavINST Lab, Royal Military College of Canada',
     start: 'May 2026',
     end: 'Aug 2026',
-    link: 'https://www.rmc-cmr.ca/en',
+    link: 'https://www.navinst.com/',
     logo: '/logos/maple-leaf.png',
     bullets: [
       'Created a lab automation tool with Python/Tkinter for GNSS jamming resilience testing — waveform control, 10 dB gain stepping, receiver outage/recovery event marking, and timestamped CSV logs — improving repeatability and cutting manual test execution and data-labeling time by an estimated 10–15 minutes per run.',
