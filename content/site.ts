@@ -12,9 +12,9 @@ export const SITE = {
   education: {
     school: 'University of Toronto',
     program: 'Computer Engineering',
-    status: 'In Progress',
+    status: 'Expected Apr 2028',
   },
-  bio: "Hey — Abdel here. I'm studying Computer Engineering at the University of Toronto (class of 2029). I work on perception systems, applied ML, and the infrastructure that keeps them honest. Egyptian-Canadian, currently in Toronto.",
+  bio: "Hey — Abdel here. I'm studying Computer Engineering at the University of Toronto (class of 2028). I work on perception systems, applied ML, and the infrastructure that keeps them honest. Egyptian-Canadian, currently in Toronto.",
   links: {
     github: 'https://github.com/Abdel-E',
     linkedin: 'https://linkedin.com/in/abdel-elshrief',

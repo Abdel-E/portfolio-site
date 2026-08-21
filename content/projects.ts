@@ -14,12 +14,11 @@ export const PROJECTS: Project[] = [
     name: 'Cerebras Kernel Challenge',
     award: 'Distributed Top-K kNN on WSE-2',
     summary:
-      'Exact distributed Top-K kNN across a 2D WSE-2 PE grid, cutting kernel cycle counts by up to ~85%.',
+      'Exact distributed Top-K kNN on an SDK-simulated WSE-2 wafer grid, cutting kernel cycle counts by up to ~85%.',
     stack: ['CSL', 'Python', 'WSE-2', 'Parallel Computing'],
     bullets: [
-      'Implemented exact distributed Top-K kNN using query broadcast, vectorized L2 distance, and hierarchical Top-K reduction.',
-      'Reduced kernel cycle counts by up to ~85%, cutting the baseline from ~160K to ~25K cycles and K=256 from ~851K to ~318K.',
-      'Got there with vector FMACs, blocked memory layouts, and K-specific optimizations.',
+      'Implemented an exact distributed Top-K kNN algorithm on an SDK-simulated Cerebras WSE-2 wafer chip grid using query broadcast, vectorized L2 distance computation, and hierarchical + heap-adjacent Top-K reduction.',
+      'Reduced kernel cycle counts by up to ~85%, cutting the baseline case from ~160K to ~25K cycles and the K=256 case from ~851K to ~318K using vector FMACs, blocked memory layouts, and K-specific optimizations.',
     ],
     href: 'https://github.com/Abdel-E/cerebras-kernel-challenge/blob/main/src-starter/DESIGN.md',
   },
@@ -28,13 +27,23 @@ export const PROJECTS: Project[] = [
     name: 'Twin',
     award: 'MakeUofT 1st Place Overall',
     summary:
-      'A Raspberry Pi / Arduino AI wearable that cut vision inference latency by 80% with localized YOLO-v8 models.',
+      'A Pi/Arduino AI wearable that won 1st Place Overall at MakeUofT by cutting vision inference latency 80% with real-time YOLO-v8 label analysis.',
     stack: ['Python', 'C++', 'Computer Vision', 'Raspberry Pi', 'Arduino'],
     bullets: [
-      'Won 1st Place Overall against 250+ hackers with a Pi/Arduino AI wearable.',
-      'Reduced vision inference latency by 80% using localized YOLO-v8 models.',
+      'Won 1st Place Overall among 250+ hackers by engineering a Pi/Arduino AI wearable and reducing vision inference latency by 80% through the analysis of real-time YOLO-v8 model labels in place of full image processing.',
     ],
     href: 'https://devpost.com/software/twin-pywkb4',
+  },
+  {
+    id: 'cro-agent',
+    name: 'Conversion Rate Optimization Agent',
+    summary:
+      'An autonomous storefront optimization agent that replaces static A/B testing with Thompson Sampling reinforcement learning across the full user journey.',
+    stack: ['Python', 'RL', 'Gemini API', 'FastAPI'],
+    bullets: [
+      'Built an autonomous storefront optimization agent to orchestrate the full user journey, from landing to checkout, replacing static A/B testing with real-time reinforcement learning using Thompson Sampling.',
+      'Mapped visitor signals into behavioral segments to drive targeted content across landing, cart, and checkout, outperforming traditional A/B testing by 40% in simulations.',
+    ],
   },
   {
     id: 'telemetry',

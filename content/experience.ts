@@ -20,15 +20,15 @@ export const EXPERIENCE: Experience[] = [
     link: 'https://www.rmc-cmr.ca/en',
     logo: '/logos/maple-leaf.png',
     bullets: [
-      'Enabled multimodal perception and sensor fusion for NavINST’s autonomous vehicle by developing and calibrating event-camera and frame-camera synchronization for downstream computer vision pipelines.',
-      'Enabled a low-cost 4-channel GNSS array by validating PlutoSDR calibration at 67 dB SNR and evaluating four chirp and wideband calibration methods for synchronized multi-channel SDR operation.',
-      'Expanded GNSS interference test coverage across three jammer classes by building a generator for CW, chirp, and wideband signals with configurable parameters and PSD/spectrogram diagnostics.',
-      'Guided multi-channel SDR calibration experiments by authoring a technical literature review comparing chirp-based calibration methods, implementation tradeoffs, and experimental validation approaches.',
+      'Created a lab automation tool with Python/Tkinter for GNSS jamming resilience testing — waveform control, 10 dB gain stepping, receiver outage/recovery event marking, and timestamped CSV logs — improving repeatability and cutting manual test execution and data-labeling time by an estimated 10–15 minutes per run.',
+      'Developed a low-cost 4-channel GNSS array using a Dual-AD9361 system controlled by an external 10 MHz clock and local oscillator for synchronized multi-channel operation and Direction of Arrival estimation.',
+      'Evaluated four chirp/wideband calibration methods and selected a candidate approach using literature-reported 92–99% calibration-error reductions over single-point techniques.',
+      'Improved multimodal sensor alignment for NavINST’s autonomous vehicle by correcting ~840 ms of event/frame-camera timing offset, using motion-signal synchronization and digital markers to support sensor fusion and extrinsic calibration.',
     ],
   },
   {
     id: 'agentiiv',
-    title: 'Machine Learning Engineer Intern',
+    title: 'Machine Learning Engineering Intern',
     company: 'Agentiiv',
     start: 'Jan 2026',
     end: 'Apr 2026',
@@ -36,9 +36,9 @@ export const EXPERIENCE: Experience[] = [
     domain: 'agentiiv.com',
     logo: '/logos/agentiiv.png',
     bullets: [
-      'Built a Corporate Intelligence platform by architecting a FastAPI MCP gateway across 5+ integrations.',
-      'Reduced integration latency by 40% while securing enterprise agent access with JWT/RBAC scoped authorization.',
-      'Reduced deployment latency by 80% by deploying Dockerized AWS microservices and building Prometheus/Grafana dashboards for service health and latency.',
+      'Built a Corporate Intelligence platform by architecting a FastAPI MCP server that unifies internal systems (Slack, GDrive, PostgreSQL) and monitors external data sources (social media, etc.) to accelerate team processes and execution.',
+      'Implemented SSO authentication and Role-Based Access, allowing scoped permissions and granular logging of usage, latency, and uptime metrics across internal and external MCP connections using Prometheus and Grafana.',
+      'Cut deployment time from ~20 to ~5 minutes by containerizing services on AWS and automating deployment workflows using Docker Compose.',
     ],
   },
   {
@@ -51,12 +51,12 @@ export const EXPERIENCE: Experience[] = [
     domain: 'utmist.ca',
     logo: '/logos/utmist.png',
     bullets: [
-      'Leading 2 internal and external engineering projects, driving delivery through Agile sprint planning, milestone tracking, and coordination across teams of 6+ engineers.',
+      'Selected to lead a team of 6+ engineers, owning scope, milestones, and delivery for the 2026/27 school year.',
     ],
   },
   {
     id: 'utfr',
-    title: 'Autonomous Systems Developer',
+    title: 'Embedded Systems Engineer',
     company: 'University of Toronto Formula Racing',
     start: 'Sep 2025',
     end: 'Apr 2026',
@@ -64,8 +64,8 @@ export const EXPERIENCE: Experience[] = [
     domain: 'fsaeutoronto.ca',
     logo: '/logos/utfr.png',
     bullets: [
-      'Enabled simulation-based perception testing by programming 3+ virtual sensors — LiDAR, IMU, and GPS — in Unity/C#.',
-      'Improved LiDAR ground detection by 10% by applying C++ linear algebra to autonomous-vehicle sensor pipelines.',
+      'Built a custom Unity/C# simulation environment with 3+ virtual sensors (LiDAR, IMU, GPS) to support in-house ROS 2 perception testing and reduce dependency on physical track time for validation and software development.',
+      'Improved on-car LiDAR ground detection by 10% by digitally filtering noise and labeling point-cloud data.',
     ],
   },
 ]
