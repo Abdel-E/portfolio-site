@@ -21,6 +21,7 @@ export const PROJECTS: Project[] = [
       'Reduced kernel cycle counts by up to ~85%, cutting the baseline from ~160K to ~25K cycles and K=256 from ~851K to ~318K.',
       'Got there with vector FMACs, blocked memory layouts, and K-specific optimizations.',
     ],
+    href: '/writing/topk-on-a-wafer',
   },
   {
     id: 'twin',
@@ -45,5 +46,6 @@ export const PROJECTS: Project[] = [
       'Combined rule-based detection with Isolation Forest anomaly scoring to surface exfiltration and anomalous behavior.',
       'Weighted risk alerts so operators could triage security events without reading every log line.',
     ],
+    href: 'https://github.com/Abdel-E/asset-risk-detector',
   },
 ]

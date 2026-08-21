@@ -1,0 +1,111 @@
+export const metadata = {
+  title: 'Top-K on a wafer',
+  description:
+    'Notes from the Cerebras kernel challenge: exact distributed Top-K kNN on WSE-2, and where the cycles actually went.',
+  alternates: {
+    canonical: '/writing/topk-on-a-wafer',
+  },
+}
+
+# Top-K on a wafer
+
+The Cerebras Kernel Challenge was a three-day window to put an exact Top-K kNN kernel on WSE-2. Start: 9:38 PM EST, April 28. Finish: 8:10 PM EST, May 1.
+
+The job was not approximate search. Every PE owned a shard of `D`, computed exact squared L2 distances to a query `q`, and the grid had to agree on the same K winners as a NumPy oracle — including ties.
+
+The useful result was the cycle count. Most of it came from treating distance as a vector FMAC loop, and from refusing one Top-K method for every K.
+
+<StatGrid
+  items={[
+    { label: 'Baseline', from: '~160K cycles', to: '~25K' },
+    { label: 'K = 256', from: '~851K cycles', to: '~318K' },
+  ]}
+/>
+
+<Callout variant="result" title="About 85% off the starter kernel">
+  The GUI trace made the same argument the numbers did. Host copies of `D`, then the FMAC loop, were the large blocks. Routing was not the baseline bottleneck.
+</Callout>
+
+## The grid
+
+The kernel runs on a `P × P` PE rectangle. PE `(px, py)` owns rows starting at `(py * P + px) * rows_per_pe`. Padding is a `valid_count` mask, not a guess.
+
+The host copies `D`, `D_norms`, and `valid_count` to every PE. It copies `q` only to PE `(0,0)`. The device broadcasts that query across the top row, then down each column.
+
+<Cover
+  src="/writing/topk-on-a-wafer/query-broadcast.png"
+  alt="Query broadcast: q starts at PE (0,0), moves across the top row, then down each column."
+  caption="Query broadcast. q starts at (0,0), fans out on x, then down y."
+/>
+
+After compute, each row gathers local top-K west to the row root at `px=0`, which merges `P·K` candidates down to K. Column 0 then gathers those winners north to PE `(0,0)` for the final top-K.
+
+<Cover
+  src="/writing/topk-on-a-wafer/topk-reduction.png"
+  alt="Two-stage top-K reduction: row gather west to column 0, then column gather north to PE (0,0)."
+  caption="Two-stage reduction. Rows collapse west. Column 0 collapses north."
+/>
+
+<Callout variant="insight" title="SRAM, not elegance">
+  Query wavelets carry `q`. Candidate wavelets carry one distance or one index, not both. Fusing them pressured SRAM on `k_large`, so the gathers stay split.
+</Callout>
+
+## Distance first
+
+Every case computes exact squared L2. The host folds `||q||²` into the packed row norms, so each PE only has to add the dot-product term.
+
+<Formula caption="Exact squared L2, with the query norm already folded into D_norms.">
+  ||D<sub>i</sub> − q||² = ||D<sub>i</sub>||² + ||q||² − 2 · (D<sub>i</sub> · q)
+</Formula>
+
+The dominant loop is distance accumulation: one vector `@fmacs` per feature over local rows. The first FMAC starts from `D_norms`, so there is no initialization sweep.
+
+When `d_dim` is divisible by 8, host packing makes the DSD stride 8. I tried 2, 4, 8, and 16. Eight won.
+
+<Formula caption="Baseline: about 6.1 cycles per local matrix element.">
+  25.1k / (128 × 32) ≈ 6.1
+</Formula>
+
+<Callout variant="note" title="Layout is a cycle count">
+  Blocking `D` so the FMAC stride is 8 did more for the baseline than any routing trick. Folding `||q||²` into the packed norms removed repeated PE work without making the broadcast heavier.
+</Callout>
+
+## One K, several methods
+
+Local selection changes with K because no single method won everywhere.
+
+| K | Local method | Why |
+| --- | --- | --- |
+| `1` | Track the best row | A linear scan is enough. |
+| `≤ 16` | Sorted insertion | Cheap, and already sorted for the reducer. `K = 16` is specialized to cut loop overhead. |
+| Full local K | Keep every valid row | For `k_large`, heap-sort the stream so reducers merge sorted runs. |
+| Larger, not full | Max-heap of size K | Avoids shifting up to K entries on every insert. |
+
+Sorted insertion is the right small-K trade. The heap is the right large-K trade. Using one of them for both would have left cycles on the table.
+
+## Where the fabric actually hurts
+
+During row gather, each PE sends `K` distance wavelets and `K` index wavelets toward `px=0`. The hot edge is next to the row root: traffic from the other `P − 1` PEs can all cross it.
+
+<Formula caption="Worst-case candidate wavelets on the edge next to a row root.">
+  2 · K · (P − 1)
+</Formula>
+
+Column gather has the same shape for row winners. Small-K cases stay compute-bound. At `K = 256`, root-side merge work and candidate movement finally show up.
+
+## Ties have to be boring
+
+Each candidate carries a global index, `(py · P + px) · rows_per_pe + local_row`. Every stage uses the same comparison: smaller distance wins; if distances are equal, smaller index wins.
+
+<Callout variant="insight" title="Correctness is a total order, not a reduction tree">
+  Arrival order does not matter. A row that already lost its PE's local top-K cannot be global top-K. The all-equal case is the mean one: every row identical, so the answer has to be exactly `[0, 1, …, K−1]`.
+</Callout>
+
+## What I took away
+
+Three days on WSE-2 was enough to make the same point Twin did, just in cycles instead of milliseconds: the interesting work is rarely a new algorithm. It is making the machine honest about what it is actually paying for.
+
+- Exact is cheaper than it looks if the algebra is honest. Folding `||q||²` into the packed norms removed PE work without making the broadcast heavier.
+- Layout is a cycle count. Blocking `D` so the FMAC stride is 8 did more for the baseline than any routing trick.
+- SRAM is the real compiler. Splitting distance and index gathers, and picking a different Top-K structure per K, were both memory decisions wearing an algorithm costume.
+- Correctness is a total order. Once every stage ranks by `(distance, global_index)`, the fabric can be sloppy about when wavelets arrive and still match the oracle.
