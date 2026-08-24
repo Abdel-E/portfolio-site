@@ -1,7 +1,7 @@
 export const metadata = {
   title: 'Closing an 8.7 km LiDAR SLAM loop',
   description:
-    'How I closed an 8.7 km urban LiDAR loop, then traced the remaining 3D error to vertical deformation in the LiDAR-only front end.',
+    'How I closed an 8.7 km urban LiDAR loop, then traced the remaining 3D error to vertical deformation in the LiDAR odometry.',
   alternates: {
     canonical: '/writing/closing-an-8-7-km-lidar-slam-loop',
   },
@@ -11,7 +11,7 @@ export const metadata = {
 
 During my NavINST internship, I wanted to go past LiDAR odometry and close a full urban loop. The vehicle drove an 8.7 km route and returned to its starting point. The stock pipeline had other plans: its estimated trajectory ended 93.1 m away.
 
-I got that gap down to 3.15 m by fixing a timestamp bug and giving difficult loop candidates a better verification path. Horizontal absolute position error also fell from 22.5 m to 10.38 m. The plot finally looked like the route that had actually been driven.
+I got that gap down to 3.15 m by fixing a timestamp bug and improving how difficult loop candidates were checked. Horizontal absolute position error also fell from 22.5 m to 10.38 m. The plot finally looked like the route that had actually been driven.
 
 That should have been the victory lap. Then full 3D APE came back at 38.93 m because the LiDAR-only trajectory was wandering vertically. This post covers both sides: what I fixed, what the system still got wrong, and how separating the metrics turned a confusing result into a useful one.
 
@@ -19,22 +19,39 @@ That should have been the victory lap. Then full 3D APE came back at 38.93 m bec
   items={[
     { label: 'End-to-start gap', from: '93.1 m', to: '3.15 m' },
     { label: 'Horizontal APE RMSE', from: '22.5 m', to: '10.38 m' },
-    { label: 'Accepted loops', from: '6', to: '8' },
+    { label: 'Verified loop closures', from: '6', to: '8' },
     { label: 'Processing speed', from: '9.9 Hz sensor', to: '23 Hz' },
   ]}
 />
 
 <Cover
   src="/writing/closing-an-8-7-km-lidar-slam-loop/trajectory.png"
-  alt="Improved LiDAR-only trajectory with accepted loop edges shown in red"
-  caption="The recovered 8.7 km trajectory. Red segments are the eight accepted loop constraints, including the final link near the start."
+  alt="Improved LiDAR-only trajectory with verified loop closures shown in red"
+  caption="The recovered 8.7 km trajectory. Red segments mark the eight verified loop closures, including the final match near the start."
+/>
+
+For comparison, this is the actual Urban01 route overlaid on the city map:
+
+<Cover
+  src="https://arxiv.org/html/2502.13863v1/figs/Urban01.jpg"
+  alt="Reference Urban01 route drawn in red over an aerial map"
+  caption="The reference Urban01 path from the NavINST dataset paper. The route starts and ends at the southern tip. Source: Araujo et al., 2025."
 />
 
 ## The setup
 
 I ran [KISS-SLAM](https://arxiv.org/abs/2503.12660), built on [KISS-ICP](https://arxiv.org/abs/2209.15397), on the [NavINST](https://arxiv.org/abs/2502.13863) Urban01 daytime route. The estimator only saw Velodyne VLP-16 scans. This was LiDAR-only by design. GNSS/INS stayed out of the estimator and was used afterward as the reference trajectory.
 
-The high-level flow: deskew each scan, estimate motion with ICP, build ~100 m local submaps, search for revisits, verify matches geometrically, then optimize a pose graph.
+The high-level flow was:
+
+1. deskew each LiDAR scan
+2. estimate the vehicle's motion by aligning consecutive scans with ICP
+3. combine roughly 100 m of scans into local submaps
+4. search older submaps for places the vehicle may have revisited
+5. verify those matches using their 3D geometry
+6. add verified loop-closure constraints and optimize the full trajectory
+
+A loop closure tells the optimizer that two separately estimated positions represent the same physical place. That is what lets the system correct drift accumulated between the first and second visit.
 
 <SpecTable
   rows={[
@@ -47,7 +64,7 @@ The high-level flow: deskew each scan, estimate motion with ICP, build ~100 m lo
 
 Stock KISS-SLAM already helped. With loops enabled it beat a no-loops baseline on several metrics. But it still missed the obvious one: the car clearly returned to the start, and the trajectory did not.
 
-That was the clue. The loop closer was not completely broken. It was just stopping short of the match that mattered most.
+That was the clue. The loop-closure system was finding some revisits, but it missed the one between the end of the route and the starting area.
 
 ## Bug 1: timestamps were paired with the wrong points
 
@@ -71,28 +88,28 @@ When I looked at the start and end scans side by side, the geometry was clearly 
 
 Because **finding** a candidate and **proving** it are different steps.
 
-Place retrieval proposes old submaps that might match. ICP then checks whether the 3D clouds actually align. Stock KISS-SLAM mostly took its top descriptor candidate and ran fine ICP immediately. Fine ICP works well when its initial guess is already close, but can reject a real revisit when that guess is weak.
+The retrieval stage ranked old submaps using a compact description of each scene. ICP then checked whether the 3D point clouds actually aligned. Stock KISS-SLAM mostly passed only its highest-ranked candidate directly to fine ICP. Fine ICP works well when its starting guess is already close, but it can reject a real revisit when that guess is weak.
 
-Maps 0 and 81 did overlap. With a good initialization, the overlap test passed. The match was real. The online pipeline just never gave it a fair trial.
+The first and final submaps, numbered 0 and 81, really did overlap. With a better initial alignment, they passed the geometric-overlap test. The match was valid. The original verification process just never gave it a fair trial.
 
 ## What I built
 
 I built a conservative top-k verification path:
 
-- keep the top 5 descriptor candidates, not just 1
-- reject obvious bad matches early, including candidates too close in time or too far apart in space
-- run coarse-to-fine ICP on weaker candidates before the strict overlap test
-- accept at most one loop edge per event
+- examine the 5 highest-ranked candidates instead of only the first
+- reject candidates captured too close together in time or implausibly far apart in the current trajectory
+- use coarse-to-fine ICP to give weaker initial alignments a chance to converge
+- add no more than one verified loop-closure constraint for each search
 
 <Callout variant="note" title="The design goal">
-  Improve recall on hard revisits without filling the graph with false loops. Every accepted edge still had to pass the same geometric overlap bar.
+  Find more difficult revisits without filling the trajectory graph with false matches. Every added constraint still had to pass the same minimum geometric-overlap requirement.
 </Callout>
 
-That recovered eight loops online, including the final `0 → 81` link near the route start. I validated each edge against saved submap geometry and the held-out INS trajectory, so I was not grading my own homework with a prettier plot.
+This process identified eight valid loop closures during the run. Most importantly, it added a constraint between the first submap, 0, and the final submap, 81, near the route start. I checked every constraint against saved submap geometry and the held-out INS trajectory, so I was not grading my own homework with a prettier plot.
 
 ## What improved
 
-Compared against time-corrected stock KISS-SLAM on the same repaired LiDAR front end:
+I compared my verifier against stock KISS-SLAM after applying the same timestamp fix to both. APE measures absolute position error against the aligned reference trajectory. RPE measures error in the estimated motion over each 100 m interval.
 
 | Metric | Stock | Improved | Change |
 | --- | ---: | ---: | ---: |
@@ -107,7 +124,7 @@ Compared against time-corrected stock KISS-SLAM on the same repaired LiDAR front
   caption="Full-route comparison after frame-correct SE(3) alignment. The combined 3D error remains large because it is dominated by vertical deformation."
 />
 
-The table is satisfying. The route closes, horizontal APE drops by 53.9%, and heading improves. The combined local RPE barely changes because both runs use the same LiDAR odometry front end.
+The table is satisfying. The route closes, horizontal APE drops by 53.9%, and heading improves. Overall 3D RPE barely changes because both versions use the same scan-to-scan LiDAR odometry. My changes improve loop closure, not the underlying local-motion estimate.
 
 At first glance, that looked like a clean win. Then the full 3D metrics arrived and made the result look much worse. Treating everything as one number would have hidden what was actually happening.
 
@@ -136,12 +153,12 @@ I did not want to label it "pitch drift" just because the z-axis looked bad. I w
 
 The vertical error ranged from -66.81 m to +83.51 m. It did not steadily increase or decrease with time. A linear trend explained little of the shape (`R² = 0.122`), so a single accumulating pitch bias was not a good description. The error wandered with the route.
 
-The stronger clue was repeatability. The vertical-error shape correlated between 0.90 and 0.98 across all evaluated runs. The loop configurations changed, but the same deformation kept returning. That points to the shared LiDAR odometry front end rather than the loop optimizer as the main source.
+The stronger clue was repeatability. The vertical-error shape correlated between 0.90 and 0.98 across all evaluated runs. I changed which loop closures were added, but the same deformation kept returning. That points to the shared scan-to-scan LiDAR odometry rather than the loop-closure optimizer as the main source.
 
-I also tried to disprove the diagnosis. All trajectories were evaluated with full, no-scale SE(3) alignment. This can remove one constant global rotation and translation, but it cannot flatten route-dependent deformation. Converting the raw LiDAR trajectory into the INS frame changed aligned 3D APE by only 3.6 mm, so a forgotten sensor extrinsic was not secretly ruining the score.
+I also tried to disprove the diagnosis. Before measuring error, I aligned each trajectory to the reference using one rigid 3D rotation and translation, with no rescaling. This can correct a constant offset or tilt, but it cannot flatten a shape that deforms differently along the route. Applying the known LiDAR-to-INS coordinate transform changed aligned 3D APE by only 3.6 mm, so a forgotten sensor offset was not secretly ruining the score.
 
 <Callout variant="note" title="The honest conclusion">
-  The LiDAR-only front end exhibited route-dependent vertical deformation consistent with weak roll and pitch observability and the absence of a gravity constraint. Loop closures substantially corrected horizontal topology, but they did not constrain vertical drift.
+  The LiDAR-only odometry produced a repeatable vertical error that changed with the route. Weak roll and pitch observability, combined with no gravity constraint, are consistent with this failure. Loop closure repaired the overall horizontal path, but it did not constrain vertical drift.
 </Callout>
 
 That wording matters. The evidence localizes and characterizes the failure, but it does not prove one exact internal cause. Adding an IMU gravity constraint, GNSS, or map priors would be the natural next experiment. It would also turn this into a sensor-fusion project. Chasing a sub-meter headline by tuning more loop thresholds would not address the limitation I had actually measured.
