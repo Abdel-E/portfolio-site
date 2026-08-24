@@ -11,7 +11,7 @@ export const metadata = {
 
 The Cerebras Kernel Challenge was a three-day window to put an exact Top-K kNN kernel on WSE-2. Start: 9:38 PM EST, April 28. Finish: 8:10 PM EST, May 1.
 
-The job was not approximate search. Every PE owned a shard of `D`, computed exact squared L2 distances to a query `q`, and the grid had to agree on the same K winners as a NumPy oracle — including ties.
+The job was not approximate search. Every PE owned a shard of `D`, computed exact squared L2 distances to a query `q`, and the grid had to agree on the same K winners as a NumPy oracle, including ties.
 
 The useful result was the cycle count. Most of it came from treating distance as a vector FMAC loop, and from refusing one Top-K method for every K.
 

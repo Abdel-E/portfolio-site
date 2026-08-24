@@ -40,7 +40,7 @@ function ExperienceRow({ job }: { job: Experience }) {
                 {job.company}
               </MorphingDialogTitle>
               <span className="shrink-0 text-[13px] text-muted sm:text-[14px]">
-                {job.start} — {job.end}
+                {job.start} to {job.end}
               </span>
             </div>
             <MorphingDialogSubtitle className="mt-0.5 text-[14px] leading-tight text-muted">
@@ -62,7 +62,7 @@ function ExperienceRow({ job }: { job: Experience }) {
           <MorphingDialogSubtitle className="mt-1 text-sm text-muted">
             {job.company}
             <span className="mx-1.5 text-gold">·</span>
-            {job.start} — {job.end}
+            {job.start} to {job.end}
           </MorphingDialogSubtitle>
 
           <MorphingDialogDescription

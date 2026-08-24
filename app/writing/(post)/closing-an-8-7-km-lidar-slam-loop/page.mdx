@@ -11,7 +11,7 @@ export const metadata = {
 
 During my NavINST internship I wanted to go past LiDAR odometry and actually close a full urban loop. The vehicle drove an 8.7 km route and came back to where it started. On paper that is a loop-closure problem. In practice the stock pipeline still ended ~93 m away.
 
-This post is about how I got that gap down to 3.15 m — not by tuning one threshold, but by finding two separate bugs and fixing the pipeline end to end.
+This post is about how I got that gap down to 3.15 m, not by tuning one threshold, but by finding two separate bugs and fixing the pipeline end to end.
 
 <StatGrid
   items={[
@@ -45,7 +45,7 @@ The high-level flow: deskew each scan, estimate motion with ICP, build ~100 m lo
 
 Stock KISS-SLAM already helped. With loops enabled it beat a no-loops baseline on several metrics. But it still missed the obvious one: the car clearly returned to the start, and the trajectory did not.
 
-That was the clue. Loop closure was doing something — just not enough.
+That was the clue. Loop closure was doing something, just not enough.
 
 ## Bug 1: timestamps were paired with the wrong points
 
@@ -61,7 +61,7 @@ valid_points = points[valid]
 valid_times = timestamps[valid]
 ```
 
-That cleaned up local motion error a bit. It did **not** fix the missed final loop — which told me there was a second problem downstream.
+That cleaned up local motion error a bit. It did **not** fix the missed final loop, which told me there was a second problem downstream.
 
 ## Bug 2: the right loop never got a fair ICP shot
 
@@ -105,7 +105,7 @@ Compared against time-corrected stock KISS-SLAM on the same repaired LiDAR front
   caption="Trajectory and error comparison across the baseline runs and the improved verifier."
 />
 
-The big wins are global: the route closes and horizontal error drops a lot. Local motion barely moves, which makes sense — both runs share the same odometry front end. Vertical error is still high (~37 m), so this is a strong horizontal loop-closure result, not a finished 3D navigation stack.
+The big wins are global: the route closes and horizontal error drops a lot. Local motion barely moves, which makes sense because both runs share the same odometry front end. Vertical error is still high (~37 m), so this is a strong horizontal loop-closure result, not a finished 3D navigation stack.
 
 Evaluation had its own lesson. My first metrics pass reported nonsense like 134 m of drift per 100 m driven for every run. That turned out to be a body-frame conversion mistake, not bad LiDAR. Fixing the axis convention before trusting the numbers mattered as much as fixing the SLAM logic.
 

@@ -6,7 +6,7 @@ import { PROJECTS, type Project } from '@/content/projects'
 export const metadata: Metadata = {
   title: 'Projects',
   description:
-    'Selected engineering work — kernels, wearables, optimization agents, and anomaly detection.',
+    'Selected engineering work: kernels, wearables, optimization agents, and anomaly detection.',
 }
 
 function isGithub(href: string) {

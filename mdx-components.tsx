@@ -1,6 +1,7 @@
 import type { MDXComponents } from 'mdx/types'
 import { ComponentPropsWithoutRef } from 'react'
 import { highlight } from 'sugar-high'
+import { Cover } from '@/components/mdx/cover'
 import { Callout } from '@/components/mdx/callout'
 import { Formula } from '@/components/mdx/formula'
 import { SpecTable } from '@/components/mdx/spec-table'
@@ -13,28 +14,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
     Formula,
     SpecTable,
     StatGrid,
-    Cover: ({
-      src,
-      alt,
-      caption,
-    }: {
-      src: string
-      alt: string
-      caption: string
-    }) => {
-      return (
-        <figure className="not-prose my-8">
-          <img
-            src={src}
-            alt={alt}
-            className="w-full rounded-xl border border-sand bg-sand/30 dark:border-white/12 dark:bg-white/[0.03]"
-          />
-          <figcaption className="mt-2.5 text-center text-sm text-muted">
-            {caption}
-          </figcaption>
-        </figure>
-      )
-    },
+    Cover,
     table: (props: ComponentPropsWithoutRef<'table'>) => (
       <div className="not-prose my-7 overflow-x-auto rounded-xl border border-sand dark:border-white/12">
         <table

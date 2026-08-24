@@ -20,9 +20,9 @@ export const EXPERIENCE: Experience[] = [
     link: 'https://www.navinst.com/',
     logo: '/logos/maple-leaf.png',
     bullets: [
-      'Created a lab automation tool with Python/Tkinter for GNSS jamming resilience testing — waveform control, 10 dB gain stepping, receiver outage/recovery event marking, and timestamped CSV logs — improving repeatability and cutting manual test execution and data-labeling time by an estimated 10–15 minutes per run.',
+      'Created a lab automation tool with Python/Tkinter for GNSS jamming resilience testing (waveform control, 10 dB gain stepping, receiver outage/recovery event marking, and timestamped CSV logs), improving repeatability and cutting manual test execution and data-labeling time by an estimated 10-15 minutes per run.',
       'Developed a low-cost 4-channel GNSS array using a Dual-AD9361 system controlled by an external 10 MHz clock and local oscillator for synchronized multi-channel operation and Direction of Arrival estimation.',
-      'Evaluated four chirp/wideband calibration methods and selected a candidate approach using literature-reported 92–99% calibration-error reductions over single-point techniques.',
+      'Evaluated four chirp/wideband calibration methods and selected a candidate approach using literature-reported 92-99% calibration-error reductions over single-point techniques.',
       'Improved multimodal sensor alignment for NavINST’s autonomous vehicle by correcting ~840 ms of event/frame-camera timing offset, using motion-signal synchronization and digital markers to support sensor fusion and extrinsic calibration.',
     ],
   },
