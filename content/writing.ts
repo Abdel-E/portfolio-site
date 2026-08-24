@@ -11,9 +11,9 @@ export const WRITING: WritingPost[] = [
     slug: 'closing-an-8-7-km-lidar-slam-loop',
     title: 'Closing an 8.7 km LiDAR SLAM loop',
     description:
-      'How I closed an 8.7 km urban LiDAR loop on NavINST by fixing a timestamp bug and improving loop-closure recall.',
+      'How I closed an 8.7 km urban LiDAR loop, then traced the remaining 3D error to vertical deformation in the LiDAR-only front end.',
     date: '2026-08-22',
-    readingTime: 6,
+    readingTime: 8,
   },
   {
     slug: 'topk-on-a-wafer',
