@@ -1,7 +1,7 @@
 export const metadata = {
   title: 'Closing an 8.7 km LiDAR SLAM loop',
   description:
-    'Debugging point timestamps, place retrieval, and ICP initialization in a LiDAR-only 3D SLAM pipeline on the NavINST Urban01 route.',
+    'How I closed an 8.7 km urban LiDAR loop on NavINST by fixing a timestamp bug and improving loop-closure recall.',
   alternates: {
     canonical: '/writing/closing-an-8-7-km-lidar-slam-loop',
   },
@@ -9,89 +9,51 @@ export const metadata = {
 
 # Closing an 8.7 km LiDAR SLAM loop
 
-Debugging point timestamps, place retrieval, and ICP initialization in a LiDAR-only 3D SLAM pipeline.
+During my NavINST internship I wanted to go past LiDAR odometry and actually close a full urban loop. The vehicle drove an 8.7 km route and came back to where it started. On paper that is a loop-closure problem. In practice the stock pipeline still ended ~93 m away.
 
-I wanted to understand the difference between running LiDAR odometry and building a complete SLAM system. Instead of stopping after producing a trajectory, I extended and evaluated a LiDAR-only SLAM pipeline on a full urban route from the [NavINST dataset](https://arxiv.org/abs/2502.13863).
+This post is about how I got that gap down to 3.15 m — not by tuning one threshold, but by finding two separate bugs and fixing the pipeline end to end.
 
-The final system processed 21,069 Velodyne VLP-16 scans over an 8.7 km drive. It recovered eight validated loop closures, reduced the estimated end-to-start gap from 93.1 m to 3.15 m, and lowered horizontal trajectory error by 53.9%.
-
-The result did not come from simply lowering a threshold. I found two separate failure modes: a point/timestamp correspondence defect that affected LiDAR deskewing, and a loop-retrieval failure that prevented valid geometry from reaching registration. Fixing them required treating sensor ingestion, place recognition, geometric verification, graph optimization, and evaluation as one connected system.
+<StatGrid
+  items={[
+    { label: 'End-to-start gap', from: '93.1 m', to: '3.15 m' },
+    { label: 'Horizontal APE', from: '22.5 m', to: '10.4 m' },
+    { label: 'Accepted loops', from: '6', to: '8' },
+    { label: 'Processing speed', from: '9.9 Hz sensor', to: '23 Hz' },
+  ]}
+/>
 
 <Cover
   src="/writing/closing-an-8-7-km-lidar-slam-loop/trajectory.png"
   alt="Improved LiDAR-only trajectory with accepted loop edges shown in red"
-  caption="The improved 8.7 km trajectory. Red segments show the eight accepted long-range loop constraints, including the final connection between local maps 0 and 81 near the route start."
+  caption="The recovered 8.7 km trajectory. Red segments are the eight accepted loop constraints, including the final link near the start."
 />
 
-## Project at a glance
+## The setup
 
-| Item | Value |
-| --- | --- |
-| Sensor input | Velodyne VLP-16 LiDAR only |
-| Dataset | NavINST Urban01 daytime route |
-| Route | 8.706 km over 2,124.9 s |
-| Scans | 21,069 at approximately 9.9 Hz |
-| Front end | [KISS-ICP](https://arxiv.org/abs/2209.15397) |
-| SLAM system | [KISS-SLAM](https://arxiv.org/abs/2503.12660) |
-| Local maps | 82 completed submaps, 83 graph nodes |
-| Accepted loops | 8 |
-| Runtime | 23 Hz, approximately 2.3× the recorded sensor rate |
-| Reference use | Held out until post-run evaluation |
+I ran a LiDAR-only SLAM pipeline on the [NavINST](https://arxiv.org/abs/2502.13863) Urban01 daytime route using [KISS-SLAM](https://arxiv.org/abs/2503.12660) on top of [KISS-ICP](https://arxiv.org/abs/2209.15397). The estimator only saw Velodyne VLP-16 scans. GNSS/INS stayed out of the run and was used afterward for evaluation.
 
-## From odometry to SLAM
+The high-level flow: deskew each scan, estimate motion with ICP, build ~100 m local submaps, search for revisits, verify matches geometrically, then optimize a pose graph.
 
-LiDAR odometry estimates sequential motion by aligning each new scan with a recent map. This is enough to produce a locally smooth trajectory, but every registration contains a small amount of error. Over thousands of scans, those errors accumulate into drift.
+<SpecTable
+  rows={[
+    { label: 'Route', value: '8.7 km, ~35 minutes of driving' },
+    { label: 'Scans', value: '21,069 at ~10 Hz' },
+    { label: 'Stack', value: 'KISS-ICP + KISS-SLAM + g2o' },
+    { label: 'Runtime', value: '23 Hz (2.3× realtime)' },
+  ]}
+/>
 
-Full SLAM adds a back end that can recognize a previously visited place, add a relative-pose constraint between the two visits, and optimize the trajectory globally. In this project, the pipeline was:
+Stock KISS-SLAM already helped. With loops enabled it beat a no-loops baseline on several metrics. But it still missed the obvious one: the car clearly returned to the start, and the trajectory did not.
 
-```text
-PointCloud2 scan
-    -> point-time aligned filtering and deskewing
-    -> KISS-ICP scan-to-map odometry
-    -> 100 m local submaps
-    -> descriptor-based place retrieval
-    -> ICP geometric verification
-    -> odometry and loop edges in a pose graph
-    -> optimized trajectory and map
-```
+That was the clue. Loop closure was doing something — just not enough.
 
-KISS-SLAM builds on KISS-ICP for odometry, MapClosures for place retrieval, and g2o for graph optimization. My work focused on integrating the NavINST data, instrumenting the pipeline, diagnosing its failures, implementing targeted recovery logic, and building a frame-correct evaluation.
+## Bug 1: timestamps were paired with the wrong points
 
-## Establishing a baseline
+A spinning LiDAR captures points at different times. To deskew a scan you need each point's XYZ **and** its timestamp to stay matched.
 
-I first compared stock KISS-SLAM with a controlled run where only loop-edge insertion was disabled. The LiDAR front end, local maps, candidate workload, and optimizer remained unchanged.
+The reader filtered out invalid XYZ rows but kept the original timestamp array. So point `i` could get timestamp `j`. On the first scan alone, ~99.95% of retained points had the wrong time.
 
-The stock system accepted six loops. Compared with loops disabled, it reduced translation APE RMSE by 11.6% and APE p95 by 23.0%. Direct point-cloud checks also showed much stronger overlap at the revisited submaps.
-
-However, the system missed the most obvious physical loop: the vehicle returned to its starting area at the end of the recording, but the estimated endpoint remained approximately 80–93 m away, depending on the front-end run.
-
-<Callout variant="insight" title="The useful failure">
-  Loop closure was helping, but the pipeline still could not recover the route's final topology.
-</Callout>
-
-## Failure 1: point timestamps lost correspondence
-
-A spinning LiDAR does not capture a complete scan at one instant. The vehicle moves while the sensor rotates, so each point's acquisition time is used to deskew the scan into a common reference time.
-
-The input is an organized ROS `PointCloud2` message. Each row may contain XYZ, intensity, laser ring, and point time. If row `i` is retained, its XYZ and time must remain paired:
-
-```text
-points[i] <-> timestamps[i]
-```
-
-The installed KISS-ICP reader removed rows with NaN XYZ coordinates but did not apply the same mask to the timestamp field. On the first scan, 29,184 organized rows became 18,509 valid points, but those points were paired with the first 18,509 unfiltered times. Approximately 99.95% of the retained points therefore received a different time from their correct row.
-
-A small example shows why truncation is not enough:
-
-```text
-Points: A, invalid, B, C, invalid
-Times:  1,    2,    3, 4,    5
-
-Correct:   A->1, B->3, C->4
-Truncated: A->1, B->2, C->3
-```
-
-I replaced the reader with a shared-mask implementation:
+The fix was small but strict: apply one mask to both arrays.
 
 ```python
 valid = ~np.any(np.isnan(points), axis=1)
@@ -99,169 +61,64 @@ valid_points = points[valid]
 valid_times = timestamps[valid]
 ```
 
-The wrapper also verifies array shapes, equal point/time counts, and finite outputs, then writes a full-run audit. Across 21,069 scans, it retained 468.6 million valid rows and removed 146.2 million invalid rows without breaking point/time parity.
+That cleaned up local motion error a bit. It did **not** fix the missed final loop — which told me there was a second problem downstream.
 
-The corrected front end reduced 100 m translation and rotation RPE by 2.0% and 1.7%. Global APE changed very little, which was an important result: the sensor data defect was real, but it was not the reason the final loop was missed.
+## Bug 2: the right loop never got a fair ICP shot
 
-## Failure 2: visible geometry never reached a useful ICP alignment
+When I looked at the start and end scans side by side, the geometry was clearly similar. So why no closure?
 
-When I viewed scans near the beginning and end in Foxglove, they appeared to show almost the same environment. Why did the system not close the loop?
+Because **finding** a candidate and **proving** it are different steps.
 
-The key distinction is between **place retrieval** and **geometric verification**.
+Place retrieval proposes old submaps that might match. ICP then checks whether the 3D clouds actually align. Stock KISS-SLAM mostly took its top descriptor guess and ran fine ICP immediately. Fine ICP only works if the initial guess is already close.
 
-Place retrieval compresses each local map into a descriptor and searches many old maps cheaply. Its job is to propose likely candidates and an approximate relative transform. Geometric verification then aligns the actual 3D clouds and decides whether the match is safe enough to become a graph edge.
+Maps 0 and 81 did overlap. With a good initialization, the overlap test passed. The system just was not giving that pair a wide enough chance during the online run.
 
-A human comparing the start and end has already selected the correct pair. The algorithm must discover that pair among 82 completed local maps. Repetitive road structure, viewpoint changes, vegetation, moving objects, submap boundaries, and accumulated drift all make descriptor retrieval harder.
+## What I changed
 
-The stock path selected only its best descriptor candidate and refined it with fine point-to-plane ICP using an approximately 0.866 m correspondence radius. ICP is locally convergent: if the initial transform is several metres wrong, nearest-neighbor correspondences may be incorrect, and fine ICP cannot recover.
+I added a conservative top-k verifier:
 
-Offline tests confirmed that maps 0 and 81 contained valid overlapping geometry. With a reference-near initialization, the stock geometric test reached 0.423 overlap and passed. The failure occurred earlier, in candidate recall and transform initialization.
+- keep the top 5 descriptor candidates, not just 1
+- reject obvious bad matches early (too close in time, too far apart in space)
+- run coarse-to-fine ICP on weaker candidates before the strict overlap test
+- accept at most one loop edge per event
 
-## A conservative top-k geometric verifier
+<Callout variant="note" title="The design goal">
+  Improve recall on hard revisits without filling the graph with false loops. Every accepted edge still had to pass the same geometric overlap bar.
+</Callout>
 
-The recovery policy had to improve recall without filling the graph with false loops. I implemented a top-k verifier that keeps the stock strict overlap test but gives weaker, plausible candidates a wider registration basin.
-
-```text
-Retrieve the top 5 descriptor candidates
-
-For each candidate:
-    reject if descriptor evidence is below the minimum
-    reject if maps are fewer than 10 IDs apart
-
-    if descriptor evidence is strong:
-        run stock fine ICP
-    otherwise:
-        reject if LiDAR-estimated keyposes are more than 150 m apart
-        run coarse ICP at 5 m, then 2 m, then fine ICP at 0.866 m
-        reject corrections larger than 10 m or 15 degrees
-
-    require voxel overlap greater than 0.4
-
-Insert at most one edge: the passing candidate with the highest overlap
-```
-
-The temporal gate prevents nearby submaps from being mislabeled as long-range loops. The 150 m gate limits expensive registration for weak descriptors using only the current LiDAR estimate. Coarse-to-fine ICP works on downsampled clouds with larger correspondence distances first, allowing a moderately inaccurate initial transform to move into fine ICP's convergence basin. The transform correction bound prevents ICP from rescuing a descriptor hypothesis that was too far from its original claim.
-
-Finally, the voxel-overlap test requires actual 3D agreement. If `A` and `B` are occupied-voxel sets:
-
-<Formula caption="Voxel overlap used to accept a loop candidate.">
-  overlap = |A ∩ B| / min(|A|, |B|)
-</Formula>
-
-This policy retrieved 184 online candidates. It rejected 154 before ICP, geometrically tested 30, and accepted eight. The final `0 → 81` candidate passed with 0.423 online overlap.
-
-## Validating the accepted loops
-
-A loop detector can make a trajectory look better by adding a wrong edge, so acceptance count alone is not evidence of correctness. I validated each edge in three independent ways:
-
-1. graph topology and temporal separation;
-2. direct overlap between the saved 3D submaps; and
-3. post-run comparison with the held-out INS relative transform.
-
-<Cover
-  src="/writing/closing-an-8-7-km-lidar-slam-loop/closure-pairs.png"
-  alt="Accepted loop-closure submap pairs after graph optimization"
-  caption="Blue and orange show the two local maps in each accepted pair after graph optimization. The final panel is the recovered map 0/map 81 start-area loop."
-/>
-
-Across all eight edges, post-optimization symmetric overlap averaged 0.697 and median nearest-neighbor separation averaged 0.432 m. Relative to held-out INS motion, edge translation error was at most 1.981 m and rotation error was at most 3.327 degrees.
-
-The map 0 and map 81 keypose origins are approximately 92.7 m apart in the reference. That does not invalidate the loop: each local map covers roughly 100 m of motion, so their point-cloud extents overlap even though their origins are not the same point.
-
-## What the pose graph changes
-
-The graph contains a pose for each local map, odometry edges between neighboring maps, and loop edges between revisited maps. Node 0 is fixed to remove the graph's arbitrary global position and orientation. This `FIX 0` operation chooses a reference frame; it does not make the first pose ground truth.
-
-When a loop conflicts with accumulated odometry drift, graph optimization adjusts many connected poses to reduce the full set of residuals. Moving only the endpoint would create a discontinuity with its neighboring odometry edge. The loop therefore corrects the global route shape while preserving local continuity as well as the graph constraints allow.
-
-## Building an evaluation I could trust
-
-The estimator consumed only VLP-16 point clouds. NovAtel GNSS/INS data entered the workflow only after each SLAM run completed.
-
-For evaluation, I converted estimated LiDAR poses into the calibrated INS body frame, associated all 21,069 estimates to the 50 Hz reference within 10 ms, and applied one no-scale rigid alignment per trajectory. I then measured:
-
-- **Endpoint gap:** whether the route returned to its starting area.
-- **APE:** global error over all associated poses.
-- **100 m RPE:** local motion error over fixed-distance route segments.
-- **Submap overlap:** geometric consistency at accepted revisits.
-
-The evaluation pipeline produced its own failure worth investigating. An early run reported approximately 134 m of translation error for every 100 m of travel across every estimator. Because the failure was common to all systems, I traced it to frame semantics rather than LiDAR odometry.
-
-NovAtel SPAN uses `x` right, `y` forward, and `z` up, while my first conversion treated azimuth like ROS yaw around a forward `x` axis. Correcting that 90-degree body-axis mismatch brought the full-SLAM 100 m translation RPE from the impossible 134.1 m result to 2.891 m. I validated the corrected forward axis against measured vehicle velocity before trusting the final metrics.
+That recovered eight loops online, including the final `0 → 81` link near the route start. I also validated each edge against saved submap geometry and held-out INS motion so I was not just trusting a prettier plot.
 
 ## Results
 
-The cleanest comparison is the improved verifier against time-corrected stock KISS-SLAM, because both runs use the repaired LiDAR front end.
+Compared against time-corrected stock KISS-SLAM on the same repaired LiDAR front end:
 
-The held-out reference start/end gap was 3.13 m. The improved 3.151 m result therefore matches the physical route rather than artificially forcing the two poses to be identical.
-
-| Metric | Time-corrected stock | Improved | Change |
+| Metric | Stock | Improved | Change |
 | --- | ---: | ---: | ---: |
-| End-to-start gap | 93.077 m | **3.151 m** | **96.6% lower** |
-| Horizontal APE RMSE | 22.527 m | **10.381 m** | **53.9% lower** |
-| Total 3D APE RMSE | 43.479 m | **38.927 m** | **10.5% lower** |
-| Heading RMSE | 2.249 deg | **1.689 deg** | **24.9% lower** |
-| 100 m translation RPE | 2.833 m | **2.807 m** | **0.9% lower** |
-| 100 m rotation RPE | 3.836 deg | **3.820 deg** | **0.4% lower** |
-| Vertical APE RMSE | **37.188 m** | 37.517 m | 0.9% higher |
-| Tilt RMSE | **15.778 deg** | 16.468 deg | 4.4% higher |
+| End-to-start gap | 93.1 m | **3.15 m** | **96.6% lower** |
+| Horizontal APE RMSE | 22.5 m | **10.4 m** | **53.9% lower** |
+| Heading RMSE | 2.25° | **1.69°** | **24.9% lower** |
+| 100 m translation RPE | 2.83 m | 2.81 m | ~flat |
 
 <Cover
   src="/writing/closing-an-8-7-km-lidar-slam-loop/trajectory-evaluation.png"
-  alt="Frame-correct trajectory and absolute-error comparison"
-  caption="Trajectory and APE comparison across loops disabled, original KISS-SLAM, time-corrected stock, and the improved verifier."
+  alt="Trajectory and absolute-error comparison across estimators"
+  caption="Trajectory and error comparison across the baseline runs and the improved verifier."
 />
 
-The endpoint and horizontal gains are large, while 100 m RPE changes very little. This is the expected signature of a back-end improvement: loop closure corrected global consistency, but both runs still shared nearly the same local KISS-ICP odometry.
+The big wins are global: the route closes and horizontal error drops a lot. Local motion barely moves, which makes sense — both runs share the same odometry front end. Vertical error is still high (~37 m), so this is a strong horizontal loop-closure result, not a finished 3D navigation stack.
 
-The total 3D APE improved by only 10.5% because vertical and tilt drift dominate the remaining Euclidean error. A trajectory can close its endpoint and become horizontally consistent while still bending incorrectly in elevation between the beginning and end.
+Evaluation had its own lesson. My first metrics pass reported nonsense like 134 m of drift per 100 m driven for every run. That turned out to be a body-frame conversion mistake, not bad LiDAR. Fixing the axis convention before trusting the numbers mattered as much as fixing the SLAM logic.
 
-## Runtime
+## What I took away
 
-The instrumented pipeline processed the full route in 1,151.7 s, averaged 23 Hz, and used approximately 1.44 GiB of peak resident memory. This remained 2.3× faster than the recorded 9.9 Hz LiDAR rate. Compared with time-corrected stock, the top-k diagnostics and 30 geometric checks added approximately 29% wall time.
+- Small data-loading bugs can look like algorithm failures. Timestamp parity is part of the sensor model.
+- Retrieval and verification are a team. A stricter ICP step cannot save a candidate that retrieval never surfaces.
+- One good headline metric is not the whole story. Closing the loop and fixing horizontal drift still left elevation basically unchanged.
+- For a project like this, evaluation is half the work. Frame conventions, alignment, and what you choose to measure need the same care as the estimator.
 
-## What I learned
+## References
 
-### Sensor schemas are part of the algorithm
+- [NavINST dataset](https://navinst.github.io/) · [paper](https://arxiv.org/abs/2502.13863)
+- [KISS-ICP](https://arxiv.org/abs/2209.15397) · [KISS-SLAM](https://arxiv.org/abs/2503.12660)
 
-The timestamp defect was only a few lines of data-loading code, but it changed the geometry supplied to deskewing. Row correspondence, frame IDs, units, and timestamp meaning deserve the same tests as registration code.
-
-### Retrieval and verification solve different problems
-
-Place retrieval needs enough recall to surface the correct old map. Geometric verification needs enough precision to keep false constraints out of the graph. A stricter verifier cannot recover a candidate that retrieval never exposes.
-
-### ICP improves a hypothesis; it does not establish truth
-
-Coarse-to-fine ICP enlarged the convergence basin, but it still depended on an initial place hypothesis. Temporal separation, correction bounds, overlap, and independent validation were necessary before trusting the result.
-
-### One strong metric can hide another failure
-
-The 3.15 m endpoint gap is a strong closure result, not proof of navigation-grade 3D localization. Decomposing APE showed that horizontal topology improved while vertical and tilt observability remained the dominant limitation.
-
-### Evaluation is its own engineering system
-
-The impossible 134 m RPE result was not noise to discard. It exposed a body-frame mistake. Timestamp association, extrinsics, axis conventions, alignment policy, and metric definitions must all be reproducible.
-
-## Limitations and next steps
-
-This project demonstrates a successful LiDAR-only horizontal loop-closure recovery, not production-ready full-3D navigation.
-
-The most important remaining limitations are:
-
-- 37.5 m vertical APE RMSE and 16.5-degree tilt RMSE;
-- a 150 m weak-candidate spatial gate that may reject true relocalization after larger drift;
-- identity information matrices for graph edges rather than registration-derived directional uncertainty; and
-- correlated 100 m RPE intervals, which should not be treated as independent trials.
-
-A focused next phase would investigate LiDAR-only ground-plane constraints, degeneracy-aware registration, and anisotropic pose-graph weighting. If raw, synchronized IMU measurements are available, a separate LiDAR-inertial experiment could address roll and pitch observability, but it would no longer be a LiDAR-only estimator.
-
-## Tools and references
-
-- [NavINST dataset](https://navinst.github.io/)
-- [NavINST dataset paper](https://arxiv.org/abs/2502.13863)
-- [KISS-ICP paper](https://arxiv.org/abs/2209.15397) · [code](https://github.com/PRBonn/kiss-icp)
-- [KISS-SLAM paper](https://arxiv.org/abs/2503.12660) · [code](https://github.com/PRBonn/kiss-slam)
-- [Open3D ICP documentation](https://www.open3d.org/html/tutorial/t_pipelines/t_icp_registration.html)
-- [g2o](https://github.com/RainerKuemmerle/g2o) · [evo](https://github.com/MichaelGrupp/evo)
-
-This work integrates and extends an open-source KISS-SLAM pipeline. It does not claim authorship of KISS-SLAM, KISS-ICP, MapClosures, ICP, or g2o.
+Built on open-source KISS-SLAM / KISS-ICP. This writeup covers my integration, debugging, and evaluation work on NavINST.

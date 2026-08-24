@@ -3,6 +3,7 @@ export type WritingPost = {
   title: string
   description: string
   date: string
+  readingTime: number
 }
 
 export const WRITING: WritingPost[] = [
@@ -10,8 +11,9 @@ export const WRITING: WritingPost[] = [
     slug: 'closing-an-8-7-km-lidar-slam-loop',
     title: 'Closing an 8.7 km LiDAR SLAM loop',
     description:
-      'Debugging point timestamps, place retrieval, and ICP initialization in a LiDAR-only 3D SLAM pipeline on the NavINST Urban01 route.',
+      'How I closed an 8.7 km urban LiDAR loop on NavINST by fixing a timestamp bug and improving loop-closure recall.',
     date: '2026-08-22',
+    readingTime: 6,
   },
   {
     slug: 'topk-on-a-wafer',
@@ -19,6 +21,7 @@ export const WRITING: WritingPost[] = [
     description:
       'Notes from the Cerebras kernel challenge: exact distributed Top-K kNN on WSE-2, and where the cycles actually went.',
     date: '2026-05-01',
+    readingTime: 7,
   },
   {
     slug: 'a-wearable-that-had-to-see',
@@ -26,5 +29,6 @@ export const WRITING: WritingPost[] = [
     description:
       'Twin, a hard-hat survival assistant we built at MakeUofT: camera, heart rate, and on-device guidance when judgment gets expensive.',
     date: '2026-02-16',
+    readingTime: 5,
   },
 ]

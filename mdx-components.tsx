@@ -3,6 +3,7 @@ import { ComponentPropsWithoutRef } from 'react'
 import { highlight } from 'sugar-high'
 import { Callout } from '@/components/mdx/callout'
 import { Formula } from '@/components/mdx/formula'
+import { SpecTable } from '@/components/mdx/spec-table'
 import { StatGrid } from '@/components/mdx/stat-grid'
 
 export function useMDXComponents(components: MDXComponents): MDXComponents {
@@ -10,6 +11,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
     ...components,
     Callout,
     Formula,
+    SpecTable,
     StatGrid,
     Cover: ({
       src,
